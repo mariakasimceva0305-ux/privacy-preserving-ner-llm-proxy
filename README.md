@@ -1,125 +1,102 @@
-# Alpha Bank Privacy-Preserving LLM Preprocessing
+# Alpha Bank: privacy-preserving preprocessing для LLM
 
-## Коротко о проекте
+## Краткое описание
 
-Этот репозиторий содержит **notebook-first baseline** для privacy-preserving предобработки русскоязычных пользовательских сообщений перед использованием LLM.  
-Текущая реализованная основа — **hybrid entity extraction pipeline**: model-based extraction + deterministic normalization + regex fallback для структурированных PII.  
-Сейчас проект ориентирован на reproducible offline inference и генерацию submission artifacts; packaging в сервис — следующий шаг.
+Репозиторий содержит рабочий baseline для кейса Альфа-Банка по защите персональных данных в пользовательских сообщениях перед использованием LLM.  
+Текущая реализация построена как `notebook-first` решение и опирается на `hybrid pipeline`: model-based extraction, deterministic normalization и regex fallback для структурированных PII.
 
-## Business problem
+## Какую проблему решает
 
-В банковских и enterprise workflow пользовательские сообщения часто содержат personal и sensitive data.  
-Если отправлять raw text напрямую в LLM, повышается риск утечки PII в external processing и logs.  
-Практичное решение — добавить preprocessing layer, который обнаруживает и санитизирует sensitive spans до downstream model calls.
+В реальных банковских сценариях в тексте клиента часто встречаются персональные и чувствительные данные.  
+Передача raw text в LLM без предварительной обработки повышает риск утечек.  
+Этот проект закрывает задачу безопасной предобработки: выделить чувствительные сущности и подготовить текст к контролируемому downstream использованию.
 
-## Task formulation
+## Ключевая идея решения
 
-Техническая задача:
+Основная инженерная идея — не полагаться только на один метод, а использовать `hybrid pipeline`:
 
-1. detect sensitive entities и их character spans в русском тексте;
-2. привести extraction output к стабильному structured format;
-3. использовать deterministic fallback для highly structured identifiers;
-4. подготовить выход для masking-oriented downstream LLM workflow.
+- model-based extraction для гибких и неоднозначных случаев;
+- deterministic normalization для стабилизации структуры ответа;
+- regex fallback для хорошо формализуемых идентификаторов.
 
-## Current implemented approach
+Такой подход дал наиболее практичный результат в текущей серии экспериментов.
 
-Текущий репозиторий находится в состоянии **notebook-first**.  
-Канонический implemented path — `Untitled1.ipynb`, где есть:
+## Ключевые возможности
 
-- prompt-based model extraction в JSON-like output;
-- JSON block extraction и parsing;
-- deterministic normalization/validation сущностей (`start`, `end`, `label`);
-- regex fallback для structured identifiers.
+- Извлечение сущностей из русскоязычного текста в структурированном виде.
+- Нормализация и валидация сущностей по полям `start`, `end`, `label`.
+- Дедупликация и ограничение по допустимым категориям.
+- Fallback-обработка через regex для `EMAIL`, `PHONE`, `CARD`, `PASSPORT`, `SNILS`, `INN`.
+- Формирование offline artifacts для submission.
 
-В ноутбуке также есть token-classification training branch, но это не основной стабильный runtime path.
-
-## Почему важен hybrid pipeline
-
-Практическая сила подхода — в комбинации гибких и deterministic шагов:
-
-- model extraction закрывает ambiguous/free-form случаи;
-- normalization обеспечивает schema consistency и убирает malformed output;
-- regex fallback повышает coverage для structured PII patterns.
-
-Именно эта hybrid схема — ключевая инженерная ценность текущего решения.
-
-## Pipeline / architecture (current state)
+## Как работает pipeline
 
 ```text
-Input text
-  -> Prompted model extraction
+Входной текст
+  -> model-based extraction (JSON-like output)
   -> JSON block extraction
-  -> Entity normalization and validation
-  -> Regex fallback (если model output пустой или невалидный)
-  -> Structured entities для offline artifacts
+  -> deterministic normalization и validation
+  -> regex fallback при пустом/невалидном результате
+  -> структурированный список сущностей
 ```
 
-## Implemented
+## Почему этот подход практичен
 
-- Notebook-based hybrid entity extraction pipeline.
-- Deterministic output normalization и label filtering.
-- Regex fallback для structured PII patterns.
-- Batch inference flow в ноутбуке.
-- Offline artifact generation в ноутбуке.
+- Model extraction покрывает сложные случаи, где regex недостаточен.
+- Deterministic post-processing снижает нестабильность model output.
+- Regex fallback повышает полноту на структурированных форматах.
+- Итоговый контур хорошо подходит как практический baseline для privacy-preserving preprocessing, а не только как учебный NER-эксперимент.
 
-## Planned
+## Что реализовано сейчас
 
-Ниже — план packaging, это пока не реализовано как standalone modules:
+Текущий код находится в notebook:
 
-- FastAPI proxy service (`/health`, `/detect`, `/mask`, `/demask`, `/proxy/chat`).
-- Request-scoped masking/de-masking module с reversible placeholders.
-- Dockerized runtime service.
-- Lightweight API tests и masking tests.
+- `notebooks/alpha_bank_privacy_pipeline.ipynb` — канонический рабочий pipeline;
+- batch inference;
+- генерация submission artifacts.
 
-## Repository structure (actual)
+Важно: в текущем состоянии репозиторий не упакован в отдельный сервисный runtime.
+
+## Структура репозитория
 
 ```text
 project-root/
-  Untitled1.ipynb
+  notebooks/
+    alpha_bank_privacy_pipeline.ipynb
   README.md
   SUBMISSION.md
-  local training data (private/local)
-  local test data (private/local)
-  local submission artifact(s)
+  requirements.txt
+  .gitignore
+  local private data and local artifacts (not for public publishing)
 ```
 
-Private/local data присутствуют в working directory и не должны публиковаться в public repository.
+## Как запустить
 
-## How to run
-
-Сейчас рабочий путь — выполнение notebook.
-
-1. Создать и активировать Python virtual environment.
-2. Установить dependencies, которые используются в notebook cells.
-3. Открыть `Untitled1.ipynb` в Jupyter.
-4. Настроить локальные paths/variables в cells.
-5. Запустить канонический hybrid inference блок для генерации artifacts.
-
-Пример setup:
+1. Создать и активировать `virtual environment`.
+2. Установить зависимости.
+3. Открыть notebook и выполнить канонический inference-блок.
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install transformers datasets accelerate seqeval scikit-learn pandas torch tqdm jupyter
+pip install -r requirements.txt
 jupyter lab
 ```
 
-## Limitations
+## Ограничения
 
-- Runtime остаётся notebook-first, а не packaged service.
-- Нет implemented API entrypoint в repository files.
-- Нет implemented Docker runtime files.
-- Нет formal test suite.
-- Нет опубликованного reproducible latency report.
+- Текущий runtime — `notebook-first`.
+- Нет выделенного service entrypoint.
+- Нет формализованного набора tests.
+- Нет отдельного воспроизводимого отчета по latency и quality-метрикам.
 
-## Possible improvements
+## Дальнейшее развитие
 
-1. Extract notebook logic в небольшой `src/` service package.
-2. Добавить FastAPI proxy endpoints для detect/mask/demask/proxy-chat flow.
-3. Добавить deterministic placeholder mapping для reversible masking.
-4. Добавить streaming-safe response restoration.
-5. Добавить lightweight tests для normalization/masking/API contract.
-6. Добавить Docker image для reproducible deployment.
+1. Вынести pipeline из notebook в модульную структуру `src/`.
+2. Упаковать решение в минимальный `FastAPI proxy`.
+3. Добавить request-scoped masking/de-masking.
+4. Добавить базовые tests для критичных частей pipeline.
+5. Добавить Docker-упаковку для воспроизводимого запуска.
 
 ## Tech stack
 
@@ -128,14 +105,7 @@ jupyter lab
 - Hugging Face Transformers
 - PyTorch
 - pandas
+- NumPy
+- scikit-learn
 - regex-based post-processing
-
-## TODO
-
-- [ ] Package notebook logic into modules.
-- [ ] Add FastAPI proxy implementation.
-- [ ] Add Docker runtime.
-- [ ] Add tests for critical components.
-- [ ] Add strict evaluation report (span + category) without invented metrics.
-- [ ] Add safe public sample data and keep private data out of public repo.
 

@@ -1,23 +1,8 @@
 __pycache__/
 *.pyc
-.ipynb_checkpoints/
-.venv/
-venv/
-
-# local data and artifacts (do not publish)
-*.csv
-*.tsv
-*.parquet
-*.pdf
-
-__pycache__/
-*.pyc
 *.pyo
 *.pyd
 .Python
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
 
 .venv/
 venv/
@@ -25,16 +10,26 @@ ENV/
 env/
 
 .ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 *.log
 
-# data / outputs
+# local private data and artifacts
+*.csv
+*.tsv
 *.parquet
-submission*.csv
+*.pdf
 
-# HuggingFace cache (optional)
+# local model/cache artifacts
 .cache/
 **/.cache/
 hf_home/
 HF_HOME/
+.huggingface/
+
+# environment files
+.env
+.env.*
 
