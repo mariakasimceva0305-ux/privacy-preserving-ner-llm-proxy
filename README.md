@@ -1,18 +1,20 @@
-﻿# privacy-preserving-ner-llm-proxy
+# privacy-preserving-ner-llm-proxy
 
-Educational project for privacy-preserving preprocessing of Russian text before LLM usage.
+Educational project for privacy-preserving preprocessing before LLM usage.
 
-## Repository Contents
+## Project Scope
 
-- `notebooks/alpha_bank_privacy_pipeline.ipynb` - main implementation notebook.
-- `SUBMISSION.md` - submission notes.
-- `requirements.txt` - dependency list.
+Notebook-based entity extraction and normalization pipeline for Russian text.
+
+## Repository Structure
+
+- `notebooks/alpha_bank_privacy_pipeline.ipynb`
+- `requirements.txt`
+- `SUBMISSION.md`
 
 ## Implemented Functionality
 
-The notebook pipeline includes:
-
-- entity extraction from text,
-- normalization and validation of extracted entities,
-- regex fallback for structured personal data patterns,
-- batch-style processing for submission artifact generation.
+- entity extraction from text
+- normalization and validation of extracted entities
+- regex fallback for structured sensitive data patterns
+- batch-style processing for submission outputs
