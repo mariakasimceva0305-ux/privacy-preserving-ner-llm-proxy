@@ -1,101 +1,214 @@
 # Privacy-Preserving NER LLM Proxy
 
-A privacy-first NLP preprocessing pipeline for **Russian text before LLM usage**. The project extracts sensitive entities, normalizes them, and masks or transforms protected fragments before the downstream request reaches a language model.
+Privacy-first preprocessing pipeline для русскоязычных текстов перед передачей в LLM: извлечение сущностей, нормализация и маскирование чувствительных данных.
 
-## Why This Project
-In real-world LLM workflows, the model is not always the first place to start. In regulated or privacy-sensitive scenarios, a better design is often:
-1. inspect the raw input;
-2. detect sensitive spans;
-3. normalize and mask them;
-4. only then pass the sanitized request to an LLM.
+Цель проекта — показать, как добавить отдельный privacy layer перед LLM-вызовом, чтобы уменьшить риск утечки персональных и чувствительных данных без полного отказа от генеративного пайплайна.
 
-This repository is built around that principle.
+---
 
-## Problem Statement
-Protect sensitive information in Russian-language user text while preserving enough semantic structure for downstream LLM processing.
+## Что делает проект
 
-## Approach
-The pipeline combines:
-- **NER-style entity extraction**
-- **normalization / validation**
-- **regex fallback rules**
-- **masking / replacement logic**
+Система обрабатывает входной текст до отправки в LLM и выполняет несколько шагов:
 
-This hybrid approach is useful because purely learned extraction may miss patterned sensitive data, while purely rule-based masking may be too brittle on natural text.
+1. **Entity Extraction** — выделяет чувствительные сущности в русском тексте.
+2. **Normalization / Validation** — приводит сущности к более устойчивому формату.
+3. **Regex Fallback** — добирает шаблонные типы данных, которые NER может пропускать.
+4. **Masking / Replacement** — скрывает чувствительные фрагменты до передачи в downstream LLM.
 
-## Repository Structure
+Идея проекта — не просто “найти сущности”, а построить прикладной preprocessing layer для privacy-aware LLM usage.
+
+---
+
+## Задача
+
+Во многих LLM-сценариях пользователи передают в модель тексты, содержащие:
+
+- персональные данные;
+- контактную информацию;
+- идентификаторы;
+- финансовые и организационные атрибуты;
+- иные чувствительные фрагменты.
+
+Если отправлять такие данные в модель без промежуточной обработки, это ухудшает privacy/compliance-профиль системы. Проект предлагает детерминированный слой предобработки, который снижает этот риск.
+
+---
+
+## Основная гипотеза
+
+Комбинация **NER + normalization + regex fallback** практичнее, чем использование только одного подхода:
+
+- NER помогает ловить контекстно-зависимые сущности;
+- регулярные выражения хорошо работают на шаблонных типах данных;
+- нормализация уменьшает число ложных пропусков и нестабильных совпадений.
+
+---
+
+## Архитектура
+
 ```text
-notebooks/
-  alpha_bank_privacy_pipeline.ipynb  # main notebook with the pipeline
-SUBMISSION.md                        # project submission notes
-requirements.txt
-README.md
+Входной русский текст
+        │
+        ▼
+┌───────────────────────────────┐
+│ Preprocessing                 │
+│ - cleaning                    │
+│ - normalization               │
+└───────────────────────────────┘
+        │
+        ▼
+┌───────────────────────────────┐
+│ NER layer                     │
+│ - extract sensitive entities  │
+│ - detect context-based spans  │
+└───────────────────────────────┘
+        │
+        ▼
+┌───────────────────────────────┐
+│ Regex fallback                │
+│ - phones                      │
+│ - emails                      │
+│ - ids / шаблонные поля        │
+└───────────────────────────────┘
+        │
+        ▼
+┌───────────────────────────────┐
+│ Masking / replacement         │
+│ - placeholder substitution    │
+│ - sanitized text output       │
+└───────────────────────────────┘
+        │
+        ▼
+Безопасный текст для LLM / downstream pipeline
 ```
 
-## Pipeline Stages
-### 1) Entity Detection
-Detect candidate sensitive spans in Russian text.
+---
 
-### 2) Normalization
-Standardize extracted values to reduce noisy variation and improve downstream matching.
+## Структура репозитория
 
-### 3) Regex Fallback
-Apply deterministic rules for structured or weakly captured sensitive patterns.
+```text
+├── notebooks/          # исследовательские ноутбуки и прототипирование
+├── SUBMISSION.md       # краткое описание решения
+├── requirements.txt
+└── README.md
+```
 
-### 4) Sanitization
-Replace or mask protected fragments before the request goes further.
+Если позже появятся отдельные production-модули, логично выделить `src/`, `configs/`, `tests/`, `examples/`.
 
-## Design Choice: Hybrid NER + Rules
-This design is deliberate.
+---
 
-**Benefits:**
-- better coverage across free-form and patterned entities
-- more transparent error analysis than black-box prompting alone
-- easier compliance-oriented review of preprocessing behavior
+## Почему этот проект важен
 
-**Trade-off:**
-- rule layers require maintenance
-- normalization must be designed carefully to avoid over-masking
+Многие RAG/LLM-проекты фокусируются на retrieval, prompting и generation, но пропускают privacy layer. На практике это слабое место системы.
 
-## Evaluation Strategy
-For this type of pipeline, the key questions are:
-- what percentage of sensitive spans are detected?
-- how many false positives are introduced?
-- what classes benefit most from regex fallback?
-- how much meaning is preserved after masking?
+Этот проект закрывает важный прикладной вопрос:
 
-Recommended reporting:
-- precision / recall / F1 for entity extraction
-- coverage gain from hybrid logic compared with a single method
-- qualitative examples of safe transformation
+**как использовать LLM на пользовательских текстах, не отправляя чувствительные данные в сыром виде.**
 
-## Running Locally
+Это особенно релевантно для:
+
+- финтеха;
+- внутренних корпоративных ассистентов;
+- legal/compliance сценариев;
+- поддержки пользователей;
+- enterprise search и knowledge assistants.
+
+---
+
+## Подход к качеству
+
+Для privacy-пайплайна важно оценивать не только “красоту модели”, но и risk profile системы.
+
+Практически здесь важны:
+
+- **Recall по чувствительным сущностям** — критично не пропустить чувствительные фрагменты;
+- **Precision** — важно не замаскировать слишком много полезного контента;
+- **Coverage by entity type** — какие классы данных покрываются надежно;
+- **Error analysis** — где NER ошибается и где regex fallback действительно помогает.
+
+В privacy-сценариях высокий recall по чувствительным сущностям обычно важнее, чем идеально чистый precision.
+
+---
+
+## Ключевые инженерные решения
+
+### 1. Hybrid pipeline
+
+NER хорошо работает на контекстных сущностях, но регулярки часто надежнее для email, phone, ID-like patterns. Гибридный подход лучше подходит для прикладного privacy layer.
+
+### 2. Normalization before masking
+
+Нормализация делает распознавание более устойчивым: один и тот же тип сущности может быть записан по-разному, а normalization снижает чувствительность к формату.
+
+### 3. Separation from LLM
+
+Приватный preprocessing вынесен в отдельный слой до LLM. Это правильно архитектурно: privacy не должен зависеть от генеративной модели.
+
+---
+
+## Как запустить
+
+### 1. Установка зависимостей
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Linux / macOS
 pip install -r requirements.txt
+```
+
+### 2. Запуск ноутбуков / пайплайна
+
+```bash
 jupyter notebook
 ```
 
-Then open `notebooks/alpha_bank_privacy_pipeline.ipynb`.
+или, если позже будет выделен `src/`:
 
-## Where This Project Is Strong
-- privacy-aware LLM preprocessing
-- NLP pipeline design beyond prompt-only solutions
-- transparent handling of structured sensitive patterns
-- interview discussion around compliance, trade-offs, and error analysis
+```bash
+python src/pipeline.py
+```
 
-## Suggested Next Improvements
-- convert notebook logic into a package / service module
-- add labeled evaluation examples by entity class
-- separate masking policy from extraction logic
-- add reversible pseudonymization mode where applicable
-- provide before/after transformation examples in the README
+---
 
-## Limitations
-- notebook-centric implementation is good for demonstration but not yet ideal for deployment
-- entity classes and masking policy depend on task requirements
-- privacy protection is only as strong as the covered entity definitions
+## Что важно уметь объяснить на интервью
 
-## Takeaway
-This repository demonstrates a mature idea: in sensitive LLM workflows, **preprocessing can be as important as generation**. The project is valuable because it focuses on a real system boundary — what should happen *before* a model sees the text.
+- какие типы сущностей считаются чувствительными;
+- почему выбран hybrid NER + regex подход;
+- почему normalization влияет на качество;
+- какие ошибки критичнее: false positives или false negatives;
+- чем privacy masking отличается от обычной NER-задачи;
+- как встроить такой слой в enterprise LLM pipeline;
+- почему этот слой должен быть отделен от генерации.
+
+---
+
+## Ограничения
+
+- Проект не претендует на полноту enterprise DLP-системы.
+- Без полноценного labeled benchmark сложно делать строгие количественные выводы.
+- Rule-based fallback требует поддержки по мере роста числа паттернов.
+- Для новых доменов и новых типов сущностей потребуются адаптация и дополнительные правила.
+
+---
+
+## Что можно улучшить дальше
+
+- выделить полноценный `src/`-контур вместо notebook-centric структуры;
+- добавить benchmark dataset и entity-level evaluation;
+- реализовать unit-тесты для masking logic;
+- добавить конфигурируемые entity policies по доменам;
+- реализовать reversible masking / token mapping для controlled downstream use;
+- упаковать проект в отдельный API/service layer.
+
+---
+
+## Технологии
+
+- Python
+- NLP / NER
+- Regex-based preprocessing
+- Russian text processing
+- Privacy-preserving preprocessing
+
+---
+
+## Итог
+
+Этот проект показывает, как из классической NER-задачи вырастает прикладной компонент ML-системы: privacy-preserving preprocessing layer для безопасного использования LLM. С инженерной точки зрения это хороший пример того, как соединить NLP, deterministic logic и system design вокруг реальной operational проблемы.
