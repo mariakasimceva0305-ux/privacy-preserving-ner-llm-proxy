@@ -1,20 +1,18 @@
-# privacy-preserving-ner-llm-proxy
+# Privacy-Preserving NER LLM Proxy
 
-Educational project for privacy-preserving preprocessing before LLM usage.
+[Русская версия](#ru) | [English version](#en)
 
-## Project Scope
+## RU
 
-Notebook-based entity extraction and normalization pipeline for Russian text.
+### О проекте
+Privacy-first pipeline для предобработки русскоязычного текста перед LLM: извлечение сущностей, нормализация и маскирование чувствительных данных.
 
-## Repository Structure
+### Гипотезы
+1. NER+regex hybrid покрывает больше типов чувствительных сущностей.
+2. Нормализация снижает ложные срабатывания.
+3. Pre-LLM privacy layer повышает compliance-профиль.
 
-- `notebooks/alpha_bank_privacy_pipeline.ipynb`
-- `requirements.txt`
-- `SUBMISSION.md`
+## EN
 
-## Implemented Functionality
-
-- entity extraction from text
-- normalization and validation of extracted entities
-- regex fallback for structured sensitive data patterns
-- batch-style processing for submission outputs
+### Overview
+An educational privacy-preserving preprocessing pipeline for Russian text before LLM usage.
