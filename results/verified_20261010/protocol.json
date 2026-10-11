@@ -44,5 +44,6 @@
     "ФИО"
   ],
   "selection": "strict validation entity micro-F1",
-  "raw_text_exported": false
+  "raw_text_exported": false,
+  "model_revision": "e8ed3b0c8bbf4fb6984c3de043bf7d2f4e5969ae"
 }

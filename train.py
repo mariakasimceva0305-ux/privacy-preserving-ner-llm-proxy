@@ -58,6 +58,7 @@ def main():
     ap.add_argument("--data", type=Path, required=True)
     ap.add_argument("--output", type=Path, default=Path("results"))
     ap.add_argument("--model", default="cointegrated/rubert-tiny2")
+    ap.add_argument("--revision", default="e8ed3b0c8bbf4fb6984c3de043bf7d2f4e5969ae")
     ap.add_argument("--epochs", type=int, default=3)
     args = ap.parse_args()
     out = args.output
@@ -93,9 +94,10 @@ def main():
             for r in rs
         )
     pd.DataFrame(manifest).to_csv(out / "split_manifest.csv", index=False)
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    tokenizer = AutoTokenizer.from_pretrained(args.model, revision=args.revision)
     model = AutoModelForTokenClassification.from_pretrained(
         args.model,
+        revision=args.revision,
         num_labels=len(label2id),
         label2id=label2id,
         id2label={i: s for s, i in label2id.items()},
@@ -116,6 +118,7 @@ def main():
     protocol = {
         "data_sha256": hashlib.sha256(args.data.read_bytes()).hexdigest(),
         "model": args.model,
+        "model_revision": args.revision,
         "seed": 42,
         "epochs": args.epochs,
         "learning_rate": 5e-5,
