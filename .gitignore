@@ -33,3 +33,9 @@ HF_HOME/
 .env
 .env.*
 
+
+results/*/model/
+*.tsv
+*.safetensors
+__pycache__/
+.pytest_cache/

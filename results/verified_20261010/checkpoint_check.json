@@ -1,0 +1,5 @@
+{
+  "documents": 20,
+  "span_predictions_exact": true,
+  "device": "cpu"
+}
