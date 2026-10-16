@@ -1,0 +1,33 @@
+{
+  "entity_types": [
+    "Email",
+    "Номер телефона"
+  ],
+  "models": {
+    "rubert": {
+      "tp": 58,
+      "fp": 7,
+      "fn": 1,
+      "precision": 0.8923076923076924,
+      "recall": 0.9830508474576272,
+      "f1": 0.9354838709677421
+    },
+    "regex_email_phone": {
+      "tp": 43,
+      "fp": 0,
+      "fn": 16,
+      "precision": 1.0,
+      "recall": 0.7288135593220338,
+      "f1": 0.8431372549019608
+    },
+    "hybrid": {
+      "tp": 58,
+      "fp": 7,
+      "fn": 1,
+      "precision": 0.8923076923076924,
+      "recall": 0.9830508474576272,
+      "f1": 0.9354838709677421
+    }
+  },
+  "scope": "Same two entity types, same existing test; no retraining"
+}
